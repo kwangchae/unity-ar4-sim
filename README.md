@@ -89,6 +89,16 @@ ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
 - Joint 각도는 라디안 단위 사용
 - 좌표계: Unity 좌표계 (Y-up) 사용
 
+## 🤖 Claude Code 사용자를 위한 안내
+
+이 Unity 프로젝트에서 Claude Code와 작업할 때는 **[CLAUDE_CODE_GUIDE.md](./CLAUDE_CODE_GUIDE.md)**를 참고하세요.
+
+### 빠른 참고사항:
+- **포함**: Assets/, ProjectSettings/, *.meta
+- **제외**: Library/, Temp/, UserSettings/
+- **Git LFS**: 이미지, 오디오, 3D 모델
+- **Unity 설정**: Visible Meta Files + Force Text
+
 ---
 
 **관련 저장소**
