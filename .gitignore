@@ -12,7 +12,8 @@
 
 # Asset meta data
 *.tmp
-*.meta
+# NOTE: .meta 파일은 Unity에서 중요합니다! 주석 처리
+# *.meta
 
 # Unity3D generated files
 *.unityproj
