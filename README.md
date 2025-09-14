@@ -46,7 +46,8 @@ ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
 
 # B) Docker 컨테이너로 실행 (권장)
 #   - 메타 저장소(ar4-stack) 루트에서 다음 실행
-#     docker compose build && docker compose up
+#     docker compose build && docker compose up          # 소프트웨어 시뮬레이션용 (ros)
+#     docker compose up ros-hw                           # 실기 연결(USB)용
 
 # 4. WSL2 IP 주소 확인 (Unity에서 설정할 IP)
 hostname -I
