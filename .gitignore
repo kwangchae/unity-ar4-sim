@@ -10,6 +10,10 @@
 # Memory Captures
 /[Mm]emoryCaptures/
 
+# Tool installers
+/git-lfs-*/
+/git-lfs-3.4.0/
+
 # Asset meta data
 *.tmp
 # NOTE: .meta 파일은 Unity에서 중요합니다! 주석 처리
