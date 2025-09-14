@@ -341,7 +341,12 @@ public bool clampToLimits = true; // 관절 한계값 적용으로 안정성 확
 
 ## 🤖 Claude Code 사용자를 위한 안내
 
-이 Unity 프로젝트에서 Claude Code와 작업할 때는 **[CLAUDE_CODE_GUIDE.md](./CLAUDE_CODE_GUIDE.md)**를 참고하세요.
+이 Unity 프로젝트에서 작업 시 유의사항:
+- 버전 관리: `Assets/`, `ProjectSettings/`, `Packages/` 및 모든 `.meta` 파일은 반드시 추적합니다.
+- 제외 대상: `Library/`, `Temp/`, `UserSettings/`, `Logs/` 등은 커밋하지 않습니다.
+- Git LFS: 이미지/오디오/3D 모델 등 대용량 바이너리는 LFS로 관리합니다. `.gitattributes`에 규칙이 포함되어 있습니다.
+- Unity 설정: Project Settings → Editor에서 Version Control = Visible Meta Files, Asset Serialization = Force Text 권장.
+- Unity YAML Merge: `.unity`, `.prefab`, `.anim` 등은 UnityYAMLMerge 사용을 권장합니다.
 
 ### 빠른 참고사항:
 - **포함**: Assets/, ProjectSettings/, *.meta
