@@ -25,6 +25,25 @@ public class AR4JoggerPanel : MonoBehaviour
     public float speedDegPerSec = 180f;
     public bool clampToLimits = true;
 
+    // Gripper UI (prismatic jaws)
+    [Header("Gripper (prismatic jaws)")]
+    [Tooltip("Show a slider to control gripper jaws (prismatic)")]
+    public bool enableGripperUI = true;
+    [Tooltip("Auto-find gripper jaws by GameObject name if references are not set")]
+    public bool autoFindGripper = true;
+    [Tooltip("Link name for jaw1 (GameObject)")]
+    public string gripperJaw1LinkName = "gripper_jaw1_link";
+    [Tooltip("Link name for jaw2 (GameObject)")]
+    public string gripperJaw2LinkName = "gripper_jaw2_link";
+    [Tooltip("ArticulationBody for jaw1 (optional if auto-find enabled)")]
+    public ArticulationBody gripperJaw1;
+    [Tooltip("ArticulationBody for jaw2 (optional if auto-find enabled)")]
+    public ArticulationBody gripperJaw2;
+    [Tooltip("Gripper move speed (m/sec)")]
+    public float gripperSpeed = 0.05f;
+    [Tooltip("Clamp gripper targets to XDrive limits")]
+    public bool gripperClampToLimits = true;
+
     [Header("Home Pose (deg)")]
     [Tooltip("비워두면 0도 포즈가 홈 포즈로 사용됩니다. 관절 수와 동일 길이 권장")]
     public float[] homePoseDegrees;
@@ -40,6 +59,10 @@ public class AR4JoggerPanel : MonoBehaviour
 
     // runtime state
     float[] _desired; // per-joint desired angle (deg)
+    float _desiredGrip; // gripper desired position (meters)
+    Slider _gripperSlider;
+    Label _gripperValueLabel;
+    bool _gripperDragging;
     
     // Public accessors for ROS2 integration
     public float[] DesiredAngles => _desired;
@@ -118,6 +141,7 @@ public class AR4JoggerPanel : MonoBehaviour
 
         LoadDB();
         BuildJointRows();
+        SetupGripperAndBuildRow();
         WireButtons();
         RefreshDropdown();
     }
@@ -138,6 +162,35 @@ public class AR4JoggerPanel : MonoBehaviour
                 joints[i].valueLabel.text = $"{d.target:0.0}°";
             if (joints[i].slider != null && !joints[i].isDragging)
                 joints[i].slider.SetValueWithoutNotify(d.target);
+        }
+
+        // Gripper smoothing (prismatic, meters)
+        if (enableGripperUI && (gripperJaw1 != null || gripperJaw2 != null))
+        {
+            float lastTarget = _desiredGrip;
+
+            if (gripperJaw1 != null)
+            {
+                var d = gripperJaw1.xDrive;
+                float tgt = Mathf.MoveTowards(d.target, _desiredGrip, gripperSpeed * Time.deltaTime);
+                if (gripperClampToLimits) tgt = Mathf.Clamp(tgt, d.lowerLimit, d.upperLimit);
+                d.target = tgt;
+                gripperJaw1.xDrive = d;
+                lastTarget = d.target;
+            }
+
+            if (gripperJaw2 != null)
+            {
+                var d = gripperJaw2.xDrive;
+                float tgt = Mathf.MoveTowards(d.target, _desiredGrip, gripperSpeed * Time.deltaTime);
+                if (gripperClampToLimits) tgt = Mathf.Clamp(tgt, d.lowerLimit, d.upperLimit);
+                d.target = tgt;
+                gripperJaw2.xDrive = d;
+                lastTarget = d.target;
+            }
+
+            if (_gripperValueLabel != null) _gripperValueLabel.text = $"{lastTarget * 1000f:0.0} mm";
+            if (_gripperSlider != null && !_gripperDragging) _gripperSlider.SetValueWithoutNotify(lastTarget);
         }
     }
 
@@ -193,6 +246,92 @@ public class AR4JoggerPanel : MonoBehaviour
             slider.RegisterCallback<MouseLeaveEvent>(e => joints[idx].isDragging = false);
             slider.RegisterCallback<BlurEvent>(e => joints[idx].isDragging = false);
         }
+    }
+
+    void SetupGripperAndBuildRow()
+    {
+        if (!enableGripperUI) return;
+        if (_list == null) return;
+
+        // Try auto-find by link GameObject name if not assigned
+        if (autoFindGripper)
+        {
+            if (gripperJaw1 == null)
+            {
+                var go = GameObject.Find(gripperJaw1LinkName);
+                if (go != null) gripperJaw1 = go.GetComponent<ArticulationBody>();
+            }
+            if (gripperJaw2 == null)
+            {
+                var go = GameObject.Find(gripperJaw2LinkName);
+                if (go != null) gripperJaw2 = go.GetComponent<ArticulationBody>();
+            }
+        }
+
+        if (gripperJaw1 == null && gripperJaw2 == null)
+        {
+            return; // nothing to show
+        }
+
+        // Determine slider limits as intersection of available jaws
+        bool has1 = gripperJaw1 != null;
+        bool has2 = gripperJaw2 != null;
+        float min = 0f, max = 0.02f, cur = 0f;
+        if (has1)
+        {
+            var d = gripperJaw1.xDrive;
+            min = d.lowerLimit; max = d.upperLimit; cur = d.target;
+        }
+        if (has2)
+        {
+            var d = gripperJaw2.xDrive;
+            if (!has1)
+            {
+                min = d.lowerLimit; max = d.upperLimit; cur = d.target;
+            }
+            else
+            {
+                min = Mathf.Max(min, d.lowerLimit);
+                max = Mathf.Min(max, d.upperLimit);
+                cur = (cur + d.target) * 0.5f;
+            }
+        }
+
+        _desiredGrip = Mathf.Clamp(cur, min, max);
+
+        var row = new VisualElement();
+        row.AddToClassList("row");
+
+        var nameLabel = new Label("[G] Gripper");
+        nameLabel.AddToClassList("name");
+
+        var slider = new Slider(min, max) { name = "slider-gripper", showInputField = false };
+        slider.AddToClassList("slider");
+
+        var valueLabel = new Label("0.0 mm");
+        valueLabel.AddToClassList("val");
+
+        row.Add(nameLabel);
+        row.Add(slider);
+        row.Add(valueLabel);
+        _list.Add(row);
+
+        slider.lowValue = min;
+        slider.highValue = max;
+        slider.SetValueWithoutNotify(_desiredGrip);
+        valueLabel.text = $"{_desiredGrip * 1000f:0.0} mm";
+
+        _gripperSlider = slider;
+        _gripperValueLabel = valueLabel;
+
+        slider.RegisterValueChangedCallback(evt =>
+        {
+            _desiredGrip = evt.newValue;
+        });
+        slider.RegisterCallback<PointerDownEvent>(e => _gripperDragging = true);
+        slider.RegisterCallback<PointerUpEvent>(e => _gripperDragging = false);
+        slider.RegisterCallback<MouseLeaveEvent>(e => _gripperDragging = false);
+        slider.RegisterCallback<BlurEvent>(e => _gripperDragging = false);
     }
 
     void WireButtons()
