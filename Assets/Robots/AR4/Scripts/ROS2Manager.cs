@@ -48,22 +48,23 @@ public class ROS2Manager : MonoBehaviour
         try
         {
             Debug.Log($"ROS2Manager: Attempting to connect to ROS at {rosIPAddress}:{rosPort}");
-            
-            // Connect to ROS
+
+            // Ensure a single global ROS connection exists and is configured before connect
             _rosConnection = ROSConnection.GetOrCreateInstance();
-            _rosConnection.ConnectOnStart = true;
-            
-            // Set ROS IP and Port
             _rosConnection.RosIPAddress = rosIPAddress;
             _rosConnection.RosPort = rosPort;
-            
+            _rosConnection.ConnectOnStart = false; // we'll connect explicitly
+
+            // Explicitly connect so registrations are sent immediately
+            _rosConnection.Connect();
+
             Debug.Log($"ROS2Manager: ROS settings configured - IP: {_rosConnection.RosIPAddress}, Port: {_rosConnection.RosPort}");
 
             // Register publishers
             _rosConnection.RegisterPublisher<JointStateMsg>(JOINT_STATES_TOPIC);
             Debug.Log($"ROS2Manager: Registered publisher for {JOINT_STATES_TOPIC}");
 
-            // Register subscribers  
+            // Register subscribers
             _rosConnection.Subscribe<JointStateMsg>(JOINT_COMMAND_TOPIC, OnJointCommandReceived);
             Debug.Log($"ROS2Manager: Subscribed to {JOINT_COMMAND_TOPIC}");
 
