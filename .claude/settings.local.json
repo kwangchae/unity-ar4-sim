@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git config:*)",
+      "Bash(git log:*)",
+      "WebFetch(domain:github.com)",
+      "Read(//c/Users/user/Documents/Unity/**)",
+      "Bash(git clone:*)",
+      "Bash(git checkout:*)",
+      "Bash(git submodule:*)",
+      "Bash(git reset:*)",
+      "Bash(git lfs pull:*)"
     ],
     "deny": [],
     "ask": []
